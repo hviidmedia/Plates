@@ -14,6 +14,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply plates-db --local --config ../../apps/web/wrangler.jsonc",
     "db:migrate:remote": "wrangler d1 migrations apply plates-db --remote --config ../../apps/web/wrangler.jsonc",
+    "db:seed:local": "wrangler d1 execute plates-db --local --file ./seed.sql --config ../../apps/web/wrangler.jsonc",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf .turbo node_modules/.cache"
   },
