@@ -38,7 +38,7 @@ function Nav() {
             Log ind
           </Link>
           <Link
-            href="#demo"
+            href="/demo"
             className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
           >
             Få en gratis demo
@@ -338,7 +338,7 @@ function Pricing() {
             ))}
           </ul>
           <Link
-            href="#demo"
+            href="/demo"
             className="mt-10 block rounded-full bg-zinc-900 px-6 py-3 text-center text-sm font-medium text-white hover:bg-zinc-800"
           >
             Få en gratis demo
