@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { eq } from "drizzle-orm";
-import { getDb, tenants } from "@plates/db";
+import { getDb, locations, tenants } from "@plates/db";
 import { getTenant } from "@/lib/tenant";
 import { getCartView } from "@/lib/cart";
 import { TenantNav } from "@/components/tenant/tenant-nav";
+import { TenantFooter } from "@/components/tenant/tenant-footer";
 import { CartLineItem } from "@/components/tenant/cart-line-item";
 import { formatPrice } from "@/lib/format";
+import { getContentPageSlugs } from "@/lib/content-pages";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +24,14 @@ export default async function CartPage() {
     .get();
   if (!tenant) return null;
 
-  const cart = await getCartView(tenant.id);
+  const [cart, contentPageSlugs, allLocations] = await Promise.all([
+    getCartView(tenant.id),
+    getContentPageSlugs(tenant.id),
+    db.select({ slug: locations.slug, city: locations.city })
+      .from(locations)
+      .where(eq(locations.tenantId, tenant.id))
+      .all(),
+  ]);
 
   return (
     <>
@@ -30,6 +39,7 @@ export default async function CartPage() {
         tenantId={tenant.id}
         tenantName={tenant.name}
         brandColor={tenant.brandColor}
+        contentPageSlugs={contentPageSlugs}
       />
       <main className="mx-auto max-w-3xl px-4 py-10">
         <h1 className="text-3xl font-bold tracking-tight">Din kurv</h1>
@@ -85,6 +95,12 @@ export default async function CartPage() {
           </div>
         )}
       </main>
+
+      <TenantFooter
+        tenant={tenant}
+        contentPageSlugs={contentPageSlugs}
+        locations={allLocations}
+      />
     </>
   );
 }
