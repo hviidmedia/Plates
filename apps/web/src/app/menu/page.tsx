@@ -2,10 +2,12 @@ import Link from "next/link";
 import { getTenant } from "@/lib/tenant";
 import { getMenuForTenant } from "@/lib/menu";
 import { TenantNav } from "@/components/tenant/tenant-nav";
+import { TenantFooter } from "@/components/tenant/tenant-footer";
 import { MenuItemCard } from "@/components/tenant/menu-item-card";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { eq } from "drizzle-orm";
-import { getDb, tenants } from "@plates/db";
+import { getDb, locations, tenants } from "@plates/db";
+import { getContentPageSlugs } from "@/lib/content-pages";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +23,14 @@ export default async function MenuPage() {
     .get();
   if (!tenant) return null;
 
-  const menu = await getMenuForTenant(tenant.id);
+  const [menu, contentPageSlugs, allLocations] = await Promise.all([
+    getMenuForTenant(tenant.id),
+    getContentPageSlugs(tenant.id),
+    db.select({ slug: locations.slug, city: locations.city })
+      .from(locations)
+      .where(eq(locations.tenantId, tenant.id))
+      .all(),
+  ]);
 
   return (
     <>
@@ -29,6 +38,7 @@ export default async function MenuPage() {
         tenantId={tenant.id}
         tenantName={tenant.name}
         brandColor={tenant.brandColor}
+        contentPageSlugs={contentPageSlugs}
       />
 
       <nav className="sticky top-[57px] z-20 border-b border-zinc-100 bg-white">
@@ -86,6 +96,12 @@ export default async function MenuPage() {
           </div>
         )}
       </main>
+
+      <TenantFooter
+        tenant={tenant}
+        contentPageSlugs={contentPageSlugs}
+        locations={allLocations}
+      />
     </>
   );
 }

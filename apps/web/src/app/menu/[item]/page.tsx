@@ -2,13 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { eq } from "drizzle-orm";
-import { getDb, tenants } from "@plates/db";
+import { getDb, locations, tenants } from "@plates/db";
 import { getTenant } from "@/lib/tenant";
 import { getMenuItemBySlug } from "@/lib/menu";
 import { TenantNav } from "@/components/tenant/tenant-nav";
+import { TenantFooter } from "@/components/tenant/tenant-footer";
 import { AddToCartButton } from "@/components/tenant/add-to-cart-button";
 import { JsonLd, menuItemSchema } from "@/components/tenant/json-ld";
 import { formatPrice } from "@/lib/format";
+import { getContentPageSlugs } from "@/lib/content-pages";
 
 export const dynamic = "force-dynamic";
 
@@ -22,9 +24,14 @@ export default async function MenuItemPage({
   const { env } = getCloudflareContext();
   const db = getDb(env.DB);
 
-  const [tenant, menuItem] = await Promise.all([
+  const [tenant, menuItem, contentPageSlugs, allLocations] = await Promise.all([
     db.select().from(tenants).where(eq(tenants.id, tenantHeader.id)).get(),
     getMenuItemBySlug(tenantHeader.id, itemSlug),
+    getContentPageSlugs(tenantHeader.id),
+    db.select({ slug: locations.slug, city: locations.city })
+      .from(locations)
+      .where(eq(locations.tenantId, tenantHeader.id))
+      .all(),
   ]);
 
   if (!tenant || !menuItem) notFound();
@@ -36,6 +43,7 @@ export default async function MenuItemPage({
         tenantId={tenant.id}
         tenantName={tenant.name}
         brandColor={tenant.brandColor}
+        contentPageSlugs={contentPageSlugs}
       />
       <main className="mx-auto max-w-3xl px-4 py-10">
         <Link href="/menu" className="text-sm text-zinc-500 hover:text-zinc-900">
@@ -73,6 +81,12 @@ export default async function MenuItemPage({
           </div>
         </div>
       </main>
+
+      <TenantFooter
+        tenant={tenant}
+        contentPageSlugs={contentPageSlugs}
+        locations={allLocations}
+      />
     </>
   );
 }

@@ -1,19 +1,64 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { getDb, locations, type Tenant } from "@plates/db";
+import { getDb, locations, openingHours, type Tenant } from "@plates/db";
 import { TenantNav } from "./tenant-nav";
+import { TenantHero } from "./tenant-hero";
+import { LocationsSection, type LocationCardData } from "./locations-section";
+import { TenantFooter } from "./tenant-footer";
 import { MenuItemCard } from "./menu-item-card";
 import { JsonLd, restaurantSchema } from "./json-ld";
 import { getMenuForTenant } from "@/lib/menu";
+import { getContentPageSlugs } from "@/lib/content-pages";
+import { getTodayHours, type OpeningHour } from "@/lib/hours";
 
 export async function TenantHome({ tenant }: { tenant: Tenant }) {
   const { env } = getCloudflareContext();
   const db = getDb(env.DB);
-  const [menu, primaryLocation] = await Promise.all([
+
+  const [menu, allLocations, allHours, contentPageSlugs] = await Promise.all([
     getMenuForTenant(tenant.id),
-    db.select().from(locations).where(eq(locations.tenantId, tenant.id)).get(),
+    db
+      .select()
+      .from(locations)
+      .where(eq(locations.tenantId, tenant.id))
+      .all(),
+    db
+      .select()
+      .from(openingHours)
+      .all(),
+    getContentPageSlugs(tenant.id),
   ]);
+
+  const primaryLocation = allLocations[0];
+
+  // Build the locations payload with today's hours per location.
+  const locationCards: LocationCardData[] = allLocations.map((loc) => {
+    const hoursForLoc: OpeningHour[] = allHours
+      .filter((h) => h.locationId === loc.id)
+      .map((h) => ({
+        dayOfWeek: h.dayOfWeek,
+        openMinutes: h.openMinutes,
+        closeMinutes: h.closeMinutes,
+      }));
+    const today = getTodayHours(hoursForLoc);
+    return {
+      id: loc.id,
+      slug: loc.slug,
+      name: loc.name,
+      addressLine1: loc.addressLine1,
+      addressLine2: loc.addressLine2,
+      city: loc.city,
+      postalCode: loc.postalCode,
+      country: loc.country,
+      lat: loc.lat,
+      lng: loc.lng,
+      phone: loc.phone,
+      email: loc.email,
+      todayLabel: today.label,
+      isOpenNow: today.isOpen,
+    };
+  });
 
   const popular =
     menu.find((cat) => cat.slug === "popular")?.items ??
@@ -22,54 +67,32 @@ export async function TenantHome({ tenant }: { tenant: Tenant }) {
   return (
     <>
       <JsonLd data={restaurantSchema(tenant, primaryLocation ?? undefined)} />
-      <TenantNav
-        tenantId={tenant.id}
-        tenantName={tenant.name}
-        brandColor={tenant.brandColor}
-      />
 
-      <section
-        className="relative"
-        style={{
-          background: `linear-gradient(180deg, ${tenant.brandColor ?? "oklch(0.95 0.04 145)"} / 8% 0%, white 100%)`,
-        }}
-      >
-        <div className="mx-auto max-w-5xl px-4 pt-16 pb-10 text-center">
-          <p className="text-sm font-medium uppercase tracking-widest text-zinc-500">
-            Velkommen
-          </p>
-          <h1 className="mt-3 text-balance text-4xl font-bold tracking-tight md:text-6xl">
-            {tenant.name}
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-balance text-zinc-600">
-            Bestil online til pickup eller levering. Frisk lavet, leveret direkte fra os.
-          </p>
-          <div className="mt-8 flex items-center justify-center gap-3">
-            <Link
-              href="/menu"
-              className="rounded-full bg-zinc-900 px-6 py-3 text-sm font-medium text-white hover:bg-zinc-800"
-            >
-              Se hele menuen
-            </Link>
-            <Link
-              href="/cart"
-              className="rounded-full border border-zinc-300 px-6 py-3 text-sm font-medium hover:bg-zinc-50"
-            >
-              Min kurv
-            </Link>
-          </div>
-        </div>
-      </section>
+      <div className="relative">
+        <TenantNav
+          tenantId={tenant.id}
+          tenantName={tenant.name}
+          brandColor={tenant.brandColor}
+          contentPageSlugs={contentPageSlugs}
+          variant="overlay"
+        />
+        <TenantHero tenant={tenant} />
+      </div>
 
       {popular.length > 0 && (
-        <section className="mx-auto max-w-5xl px-4 py-12">
-          <div className="mb-6 flex items-end justify-between">
-            <h2 className="text-2xl font-semibold tracking-tight">Populære valg</h2>
-            <Link href="/menu" className="text-sm text-zinc-500 hover:text-zinc-900">
-              Se alle →
+        <section className="mx-auto max-w-6xl px-6 py-16 md:py-20">
+          <div className="mb-8 flex items-end justify-between">
+            <h2 className="text-3xl font-bold tracking-tight text-zinc-900 md:text-4xl">
+              Populære valg
+            </h2>
+            <Link
+              href="/menu"
+              className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
+            >
+              Se hele menuen →
             </Link>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {popular.slice(0, 6).map((item) => (
               <MenuItemCard
                 key={item.id}
@@ -86,17 +109,15 @@ export async function TenantHome({ tenant }: { tenant: Tenant }) {
         </section>
       )}
 
-      <footer className="border-t border-zinc-100 py-8">
-        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-4 text-sm text-zinc-500 md:flex-row">
-          <span>© {new Date().getFullYear()} {tenant.name}</span>
-          <span>
-            Drevet af{" "}
-            <Link href="https://counter.app" className="hover:text-zinc-900">
-              Plates
-            </Link>
-          </span>
-        </div>
-      </footer>
+      {locationCards.length > 0 && (
+        <LocationsSection locations={locationCards} />
+      )}
+
+      <TenantFooter
+        tenant={tenant}
+        contentPageSlugs={contentPageSlugs}
+        locations={allLocations.map((l) => ({ slug: l.slug, city: l.city }))}
+      />
     </>
   );
 }

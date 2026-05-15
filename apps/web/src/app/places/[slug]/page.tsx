@@ -3,9 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { and, eq } from "drizzle-orm";
-import { getDb, localSeoPages, tenants } from "@plates/db";
+import { getDb, localSeoPages, locations, tenants } from "@plates/db";
 import { getTenant } from "@/lib/tenant";
 import { TenantNav } from "@/components/tenant/tenant-nav";
+import { TenantFooter } from "@/components/tenant/tenant-footer";
+import { getContentPageSlugs } from "@/lib/content-pages";
 
 export const dynamic = "force-dynamic";
 
@@ -44,9 +46,14 @@ export default async function PlacePage({ params }: Props) {
   const { env } = getCloudflareContext();
   const db = getDb(env.DB);
 
-  const [tenant, place] = await Promise.all([
+  const [tenant, place, contentPageSlugs, allLocations] = await Promise.all([
     db.select().from(tenants).where(eq(tenants.id, tenantHeader.id)).get(),
     loadPlace(tenantHeader.id, slug),
+    getContentPageSlugs(tenantHeader.id),
+    db.select({ slug: locations.slug, city: locations.city })
+      .from(locations)
+      .where(eq(locations.tenantId, tenantHeader.id))
+      .all(),
   ]);
   if (!tenant || !place) notFound();
 
@@ -56,6 +63,7 @@ export default async function PlacePage({ params }: Props) {
         tenantId={tenant.id}
         tenantName={tenant.name}
         brandColor={tenant.brandColor}
+        contentPageSlugs={contentPageSlugs}
       />
       <main className="mx-auto max-w-3xl px-4 py-12">
         <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-900">
@@ -77,6 +85,12 @@ export default async function PlacePage({ params }: Props) {
           </Link>
         </div>
       </main>
+
+      <TenantFooter
+        tenant={tenant}
+        contentPageSlugs={contentPageSlugs}
+        locations={allLocations}
+      />
     </>
   );
 }

@@ -6,28 +6,62 @@
 DELETE FROM tenants WHERE id = 'ten_demo';
 
 -- ─── Tenant ──────────────────────────────────────────────────────────────────
-INSERT INTO tenants (id, subdomain, name, brand_color, default_currency, default_locale)
-VALUES ('ten_demo', 'acme', 'Acme Bistro', 'oklch(0.62 0.18 145)', 'EUR', 'da');
+INSERT INTO tenants (
+  id, subdomain, name, brand_color, default_currency, default_locale,
+  hero_image_url, tagline, hero_headline
+) VALUES (
+  'ten_demo', 'acme', 'Acme Bistro',
+  'oklch(0.62 0.18 145)', 'EUR', 'da',
+  -- Admin UI will let tenants upload to R2. Empty here = TenantHero falls
+  -- back to a brand-color-tinted gradient. Try a real image with:
+  --   UPDATE tenants SET hero_image_url = 'https://your-r2.example/hero.jpg' WHERE id = 'ten_demo';
+  NULL,
+  'Bedste burgere og tacos i København',
+  'Det perfekte sted til frisk lavet mad — på Nørrebro, Vesterbro og Frederiksberg.'
+);
 
--- ─── Location ────────────────────────────────────────────────────────────────
+-- ─── Locations (3, to demo the location switcher) ───────────────────────────
 INSERT INTO locations (
   id, tenant_id, slug, name, address_line1, city, postal_code, country,
   lat, lng, phone, email, timezone
-) VALUES (
-  'loc_demo', 'ten_demo', 'norrebro', 'Acme Bistro - Nørrebro',
-  'Nørrebrogade 42', 'København N', '2200', 'DK',
-  55.6938, 12.5527, '+4512345678', 'norrebro@acmebistro.dk', 'Europe/Copenhagen'
-);
+) VALUES
+  ('loc_norrebro', 'ten_demo', 'norrebro', 'Acme Bistro - Nørrebro',
+   'Nørrebrogade 42', 'København N', '2200', 'DK',
+   55.6938, 12.5527, '+45 12 34 56 78', 'norrebro@acmebistro.dk', 'Europe/Copenhagen'),
+  ('loc_vesterbro', 'ten_demo', 'vesterbro', 'Acme Bistro - Vesterbro',
+   'Istedgade 84', 'København V', '1650', 'DK',
+   55.6680, 12.5466, '+45 12 34 56 79', 'vesterbro@acmebistro.dk', 'Europe/Copenhagen'),
+  ('loc_frederiksberg', 'ten_demo', 'frederiksberg', 'Acme Bistro - Frederiksberg',
+   'Gl. Kongevej 132', 'Frederiksberg', '1850', 'DK',
+   55.6788, 12.5320, '+45 12 34 56 80', 'frederiksberg@acmebistro.dk', 'Europe/Copenhagen');
 
--- ─── Opening hours (Mon–Thu 11–22, Fri–Sat 11–23, Sun 12–21) ────────────────
+-- ─── Opening hours per location (Mon–Thu 11–22, Fri–Sat 11–23, Sun 12–21) ───
+-- All three locations share the same hours for simplicity.
 INSERT INTO opening_hours (id, location_id, day_of_week, open_minutes, close_minutes) VALUES
-  ('oh_mon', 'loc_demo', 1, 660, 1320),
-  ('oh_tue', 'loc_demo', 2, 660, 1320),
-  ('oh_wed', 'loc_demo', 3, 660, 1320),
-  ('oh_thu', 'loc_demo', 4, 660, 1320),
-  ('oh_fri', 'loc_demo', 5, 660, 1380),
-  ('oh_sat', 'loc_demo', 6, 660, 1380),
-  ('oh_sun', 'loc_demo', 0, 720, 1260);
+  -- Nørrebro
+  ('oh_n_mon', 'loc_norrebro', 1, 660, 1320),
+  ('oh_n_tue', 'loc_norrebro', 2, 660, 1320),
+  ('oh_n_wed', 'loc_norrebro', 3, 660, 1320),
+  ('oh_n_thu', 'loc_norrebro', 4, 660, 1320),
+  ('oh_n_fri', 'loc_norrebro', 5, 660, 1380),
+  ('oh_n_sat', 'loc_norrebro', 6, 660, 1380),
+  ('oh_n_sun', 'loc_norrebro', 0, 720, 1260),
+  -- Vesterbro
+  ('oh_v_mon', 'loc_vesterbro', 1, 660, 1320),
+  ('oh_v_tue', 'loc_vesterbro', 2, 660, 1320),
+  ('oh_v_wed', 'loc_vesterbro', 3, 660, 1320),
+  ('oh_v_thu', 'loc_vesterbro', 4, 660, 1320),
+  ('oh_v_fri', 'loc_vesterbro', 5, 660, 1380),
+  ('oh_v_sat', 'loc_vesterbro', 6, 660, 1380),
+  ('oh_v_sun', 'loc_vesterbro', 0, 720, 1260),
+  -- Frederiksberg
+  ('oh_f_mon', 'loc_frederiksberg', 1, 660, 1320),
+  ('oh_f_tue', 'loc_frederiksberg', 2, 660, 1320),
+  ('oh_f_wed', 'loc_frederiksberg', 3, 660, 1320),
+  ('oh_f_thu', 'loc_frederiksberg', 4, 660, 1320),
+  ('oh_f_fri', 'loc_frederiksberg', 5, 660, 1380),
+  ('oh_f_sat', 'loc_frederiksberg', 6, 660, 1380),
+  ('oh_f_sun', 'loc_frederiksberg', 0, 720, 1260);
 
 -- ─── Tags ────────────────────────────────────────────────────────────────────
 INSERT INTO tags (id, tenant_id, slug, name) VALUES
@@ -98,7 +132,7 @@ INSERT INTO local_seo_pages (
   id, tenant_id, location_id, slug, area_name, title,
   body_md, seo_title, seo_description, is_published, ai_generated
 ) VALUES (
-  'place_norrebro_demo', 'ten_demo', 'loc_demo', 'norrebro', 'Nørrebro',
+  'place_norrebro_demo', 'ten_demo', 'loc_norrebro', 'norrebro', 'Nørrebro',
   'Brunch og bestilling på Nørrebro',
   '## Nørrebros bedste til pickup eller levering
 
@@ -127,3 +161,72 @@ INSERT INTO menu_item_tags (menu_item_id, tag_id) VALUES
   ('itm_veggie_burger',   'tag_vegan'),
   ('itm_mushroom_tacos',  'tag_vegan'),
   ('itm_buddha_bowl',     'tag_vegan');
+
+-- ─── Content pages (drives nav + footer links + /[page] route) ──────────────
+INSERT INTO content_pages (id, tenant_id, slug, title, body_md, seo_title, seo_description, is_published, ai_generated) VALUES
+  ('cp_our_story', 'ten_demo', 'our-story', 'Vores historie',
+   '## Fra Mexico City til Nørrebro
+
+Acme Bistro startede i 2018 som en lille taqueria på Jægersborggade. Vi havde tre borde, én grill, og et stædigt princip: lave maden så friskt vi kunne, hver dag.
+
+Syv år senere har vi tre afdelinger i København, men det grundlæggende er det samme. Vi maler vores eget oksekød fra Hindsholm. Vi presser tortillas til vores tacos i hånden. Vi laver salsa hver morgen — ingen flaske-versioner.
+
+## Hvorfor vi ikke er på Wolt
+
+Fordi vi ikke har lyst til at give 30 % af hvert måltid til en app. Vi vil hellere sælge direkte til dig, holde priserne fair, og levere selv i nabolaget. Det er også derfor du finder vores menu på vores eget site og ikke gemt bag en gebyr-mur.
+
+Tak fordi du bestiller hos os.',
+   'Vores historie · Acme Bistro',
+   'Acme Bistro startede i 2018 som taqueria på Jægersborggade. I dag tre afdelinger i København, samme fokus på friske råvarer og direkte bestilling.',
+   1, 0),
+
+  ('cp_gift_cards', 'ten_demo', 'gift-cards', 'Gavekort',
+   '## Giv et godt måltid videre
+
+Gavekort til Acme Bistro kan bruges på alle vores afdelinger og online. De udløber ikke, og du kan tilpasse beløbet til præcis hvad du har lyst til at give.
+
+## Sådan virker det
+
+1. Vælg et beløb mellem 200 kr og 5.000 kr.
+2. Skriv en personlig hilsen.
+3. Vi sender gavekortet på email til modtageren — eller til dig hvis du selv vil printe det.
+
+**Bestil gavekort:** [kontakt@acmebistro.dk](mailto:kontakt@acmebistro.dk)',
+   'Gavekort · Acme Bistro',
+   'Køb et gavekort til Acme Bistro. Kan bruges på alle afdelinger og online. Udløber ikke.',
+   1, 0),
+
+  ('cp_catering', 'ten_demo', 'catering', 'Catering',
+   '## Catering til kontoret eller festen
+
+Vi laver mad ud af huset til alt fra 10 til 200 personer. Tacos-bar, burger-stationer, bowls — eller en blanding af det hele. Vegetariske og veganske muligheder altid.
+
+## Hvad får du
+
+- En menu skræddersyet til dit event
+- Frisk lavet mad leveret to timer før gæsterne ankommer
+- Engangs-emballage hvis du har brug for det, ellers vores genbrugs-skåle
+- Mulighed for at vi opstiller en taco-bar på stedet med en kok
+
+## Bestil
+
+Skriv til [catering@acmebistro.dk](mailto:catering@acmebistro.dk) mindst 5 dage før dit event. Større events: en uge.',
+   'Catering til kontor og fest · Acme Bistro',
+   'Acme Bistro laver catering til kontor, fester og events i København. Tacos, burgere, bowls — vegetar og vegan altid.',
+   1, 0),
+
+  ('cp_contact', 'ten_demo', 'contact', 'Kontakt',
+   '## Skriv til os
+
+Generelle henvendelser: [kontakt@acmebistro.dk](mailto:kontakt@acmebistro.dk)
+
+Catering: [catering@acmebistro.dk](mailto:catering@acmebistro.dk)
+
+Presse: [presse@acmebistro.dk](mailto:presse@acmebistro.dk)
+
+## Find os
+
+Se [vores afdelinger](/#locations) på forsiden for adresser, telefonnumre og åbningstider.',
+   'Kontakt Acme Bistro',
+   'Kontakt Acme Bistro for henvendelser, catering, eller presse. Tre afdelinger i København.',
+   1, 0);
