@@ -90,6 +90,35 @@ INSERT INTO menu_items (id, tenant_id, category_id, slug, name, description, pri
   ('itm_craft_beer',      'ten_demo', 'cat_drinks',  'craft-beer',        'Craft øl',
     'Lokalt bryg fra Mikkeller. 33cl.', 5500, 'EUR', 2);
 
+-- ─── Demo local SEO landing page ─────────────────────────────────────────────
+-- This is hand-written placeholder copy. The AI generator (packages/ai) will
+-- replace the title/seo/body fields when the admin triggers regeneration.
+
+INSERT INTO local_seo_pages (
+  id, tenant_id, location_id, slug, area_name, title,
+  body_md, seo_title, seo_description, is_published, ai_generated
+) VALUES (
+  'place_norrebro_demo', 'ten_demo', 'loc_demo', 'norrebro', 'Nørrebro',
+  'Brunch og bestilling på Nørrebro',
+  '## Nørrebros bedste til pickup eller levering
+
+På Nørrebrogade 42, midt i et af Københavns mest livlige områder, finder du Acme Bistro. Vi laver mad fra bunden — alt fra Nørrebro Burgeren med hjemmemalet okse til vores Birria Tacos med langtidsbraiseret kød.
+
+## Hvad gør os til et godt valg på Nørrebro
+
+Nørrebros frokost- og aftensscene er stærk, men vi skiller os ud på tre fronter: prisen er rimelig, råvarerne er friske hver dag, og du kan bestille direkte hos os uden at betale 30 % i kommission til Wolt eller Uber Eats.
+
+Vi ligger 2 minutters gang fra Assistens Kirkegård og 5 minutter fra Nørrebro Station. Perfekt til at tage med hjem efter en gåtur, eller bestille til levering hvis du arbejder hjemmefra i området.
+
+## Til levering i nabolaget
+
+Vi leverer i hele Nørrebro samt nærliggende områder: Jagtvej, Nørrebrogade, Fælledparken-kanten og videre mod Frederiksberg. Bestil før kl. 21 og vi sender ud samme aften.',
+  'Bestil mad på Nørrebro — Acme Bistro',
+  'Acme Bistro på Nørrebrogade 42. Frisklavet mad til pickup og levering på Nørrebro. Bestil direkte uden kommission.',
+  1,
+  0
+);
+
 -- ─── Tag mappings ────────────────────────────────────────────────────────────
 INSERT INTO menu_item_tags (menu_item_id, tag_id) VALUES
   ('itm_norrebro_burger', 'tag_popular'),

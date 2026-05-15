@@ -1,17 +1,27 @@
 import Link from "next/link";
+import { eq } from "drizzle-orm";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getDb, locations, type Tenant } from "@plates/db";
 import { TenantNav } from "./tenant-nav";
 import { MenuItemCard } from "./menu-item-card";
+import { JsonLd, restaurantSchema } from "./json-ld";
 import { getMenuForTenant } from "@/lib/menu";
-import type { Tenant } from "@plates/db";
 
 export async function TenantHome({ tenant }: { tenant: Tenant }) {
-  const menu = await getMenuForTenant(tenant.id);
+  const { env } = getCloudflareContext();
+  const db = getDb(env.DB);
+  const [menu, primaryLocation] = await Promise.all([
+    getMenuForTenant(tenant.id),
+    db.select().from(locations).where(eq(locations.tenantId, tenant.id)).get(),
+  ]);
+
   const popular =
     menu.find((cat) => cat.slug === "popular")?.items ??
     menu.flatMap((cat) => cat.items).slice(0, 3);
 
   return (
     <>
+      <JsonLd data={restaurantSchema(tenant, primaryLocation ?? undefined)} />
       <TenantNav
         tenantId={tenant.id}
         tenantName={tenant.name}

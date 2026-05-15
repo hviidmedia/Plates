@@ -35,7 +35,7 @@ Owner.com's lead magnet — *"You're losing sales online. Use AI to see what to 
 | Real-time | Cloudflare Durable Objects *(planned)* | Live order status, kitchen display |
 | Auth | Better Auth *(planned)* | EU-friendly, no US tracking, runs on Workers + D1 |
 | Email | Resend *(planned)* | EU presence, GDPR DPA available |
-| AI — primary | **Claude Sonnet 4.7 / Haiku 4.5** via Anthropic API | SEO copy, place pages, menu descriptions |
+| AI — primary | **Claude Sonnet 4.6 / Haiku 4.5** via Anthropic API | SEO copy, place pages, menu descriptions |
 | AI — light ops | **Workers AI** | Translations, embeddings, image alt-text |
 | Payments | Stripe (EU) + MobilePay (DK) *(planned)* | Provider abstraction in `packages/payments` |
 | UI | Tailwind v4 + shadcn/ui | Standard, fast iteration |
@@ -70,9 +70,12 @@ plates/
 └── tsconfig.base.json
 ```
 
+Active packages:
+
+- `packages/ai` — Claude integration (Anthropic SDK), prompt templates, generators
+
 Future packages (when needed, not now):
 
-- `packages/ai` — Claude prompts, generation pipeline
 - `packages/payments` — Stripe + MobilePay abstraction
 - `packages/email` — Resend templates
 - `apps/admin` — restaurant owner dashboard (may live under `app.counter.app`)
@@ -208,18 +211,42 @@ Secrets (`wrangler secret put NAME`):
 
 ---
 
-## 9. AI Roadmap (next PR)
+## 9. AI Layer (`packages/ai`)
 
-The `packages/ai` package will land with:
+Lives in `packages/ai`, depends on `@anthropic-ai/sdk`, runs on Workers via the SDK's `fetch` adapter.
 
-- **Place pages** (`/places/[hood]`) — Claude Sonnet 4.7 generates a 600-word landing page per nearby neighborhood for a location. Bulk-run via Queues.
-- **Menu-item descriptions** — Claude Haiku 4.5, batched. Restaurant approves before publish.
-- **Schema.org JSON-LD** — `Restaurant`, `Menu`, `MenuItem`, `LocalBusiness` injected on every render.
-- **SEO meta** — `seo_title`, `seo_description` populated from menu + brand context.
-- **Translations** — Workers AI (m2m100) for menu strings into DA / EN / DE / SV / NO.
-- **Competitor analysis tool** — Owner's lead magnet. Public `/audit/[google-place-id]` endpoint that pulls Google reviews + ranks vs nearby competitors and produces a "you're losing $X/mo" report. Powered by Claude Sonnet 4.7.
+**What's shipped:**
 
-Versioning of generated content (`generated_content_versions` table) lands when we have a concrete approval-flow use case — not before.
+| Generator | Model | Use case |
+|---|---|---|
+| `generateMenuItemSeo` | `claude-haiku-4-5` | Bulk SEO copy: enriched description + `<title>` + meta. ~200 output tokens. |
+| `generatePlacePage` | `claude-sonnet-4-6` | Local-SEO landing page for `/places/[slug]`. Adaptive thinking, ~600 output tokens. |
+
+Both use **prompt caching** on the system prompt + restaurant context (`cache_control: {type: "ephemeral"}`). First call in a tenant batch pays the cache write (~1.25× input); follow-ups within 5 min pay ~0.1× for the cached prefix. Verify with `usage.cache_read_input_tokens` in the response.
+
+**Server actions** in `apps/web/src/lib/ai-actions.ts`:
+- `generateMenuItemSeoAction(menuItemId)` — populates `menu_items.ai_description`, `seo_title`, `seo_description`
+- `generatePlacePageAction({slug, areaName, …})` — upserts a `local_seo_pages` row
+
+Both are tenant-scoped via `getTenant()` and verify D1 ownership before any mutation. Not yet wired to a UI — admin in the auth+admin PR will add the trigger buttons.
+
+**Public surface that ships:**
+- `/places/[slug]` — renders published `local_seo_pages`. Tenant-only route (apex 404s).
+- `<JsonLd>` component injects `Restaurant` schema on tenant home, `MenuItem` schema on menu detail. Lives in `apps/web/src/components/tenant/json-ld.tsx`.
+- `app/sitemap.ts` — per-tenant sitemap with `/`, `/menu`, `/menu/[slug]`, `/places/[slug]`.
+
+**Required secret:** `wrangler secret put ANTHROPIC_API_KEY`. Without it, the actions throw with a helpful error.
+
+**Triggering generation today** (until admin lands):
+1. Open a server action route in dev that calls `generateMenuItemSeoAction(itemId)`, OR
+2. Use `wrangler dev --remote` and a temporary `/dev/generate` page (don't commit to main).
+3. The auth+admin PR will replace this with proper UI.
+
+**Coming in next AI PR (after admin):**
+- `generated_content_versions` table for approval workflow + rollback
+- Bulk runner via Cloudflare Queues — generate 50 place pages in parallel without blocking requests
+- Translations via Workers AI (m2m100) for DA/EN/DE/SV/NO
+- **Competitor audit tool** — Owner's signature lead magnet. Public `/audit/[google-place-id]` endpoint pulls Google Places + reviews, ranks vs nearby competitors, and produces a "you're losing €X/mo" report. Claude Sonnet 4.6 with web_search tool.
 
 ---
 
