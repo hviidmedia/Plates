@@ -1,0 +1,30 @@
+{
+  "name": "@plates/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./client": "./src/client.ts"
+  },
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply plates-db --local --config ../../apps/web/wrangler.jsonc",
+    "db:migrate:remote": "wrangler d1 migrations apply plates-db --remote --config ../../apps/web/wrangler.jsonc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .turbo node_modules/.cache"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.38.0",
+    "nanoid": "^5.0.9"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241224.0",
+    "drizzle-kit": "^0.30.0",
+    "typescript": "^5.7.2",
+    "wrangler": "^3.99.0"
+  }
+}

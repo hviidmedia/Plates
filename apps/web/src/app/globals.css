@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@import "@plates/ui/styles";
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+}
