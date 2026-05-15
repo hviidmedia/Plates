@@ -7,6 +7,7 @@ import { getTenant } from "@/lib/tenant";
 import { getMenuItemBySlug } from "@/lib/menu";
 import { TenantNav } from "@/components/tenant/tenant-nav";
 import { AddToCartButton } from "@/components/tenant/add-to-cart-button";
+import { JsonLd, menuItemSchema } from "@/components/tenant/json-ld";
 import { formatPrice } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +31,7 @@ export default async function MenuItemPage({
 
   return (
     <>
+      <JsonLd data={menuItemSchema(menuItem, tenant)} />
       <TenantNav
         tenantId={tenant.id}
         tenantName={tenant.name}
@@ -58,8 +60,10 @@ export default async function MenuItemPage({
           <div className="space-y-6 p-6 md:p-8">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">{menuItem.name}</h1>
-              {menuItem.description && (
-                <p className="mt-3 text-zinc-700">{menuItem.description}</p>
+              {(menuItem.aiDescription ?? menuItem.description) && (
+                <p className="mt-3 text-zinc-700">
+                  {menuItem.aiDescription ?? menuItem.description}
+                </p>
               )}
             </div>
             <p className="text-2xl font-semibold">

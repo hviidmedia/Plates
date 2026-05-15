@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.0.0",
+    "@plates/ai": "workspace:*",
     "@plates/db": "workspace:*",
     "@plates/ui": "workspace:*",
     "next": "^15.1.0",

@@ -4,7 +4,13 @@
 interface CloudflareEnv {
   DB: D1Database;
   TENANT_CACHE: KVNamespace;
-  IMAGES: R2Bucket;
+  MEDIA: R2Bucket;
   ASSETS: Fetcher;
-  // AI: Ai; // Workers AI binding — added when AI integration lands
+
+  // Secrets — set via `wrangler secret put NAME`
+  ANTHROPIC_API_KEY?: string;
+  // STRIPE_SECRET_KEY, MOBILEPAY_API_KEY, RESEND_API_KEY, BETTER_AUTH_SECRET
+  // are added when those features land.
+
+  // AI: Ai; // Workers AI binding — added when on-platform inference lands
 }
