@@ -93,5 +93,10 @@ function extractSubdomain(host: string, appDomain: string): string | null {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+  // Run on every request except Next internals and static asset extensions.
+  // We need middleware to run on /sitemap.xml so the tenant context is
+  // injected — exclude specific extensions, not anything containing a dot.
+  matcher: [
+    "/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|.*\\.(?:jpg|jpeg|png|gif|webp|svg|ico|css|js|woff2?|map)$).*)",
+  ],
 };
