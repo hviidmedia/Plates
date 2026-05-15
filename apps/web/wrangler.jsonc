@@ -1,0 +1,84 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "plates-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-03-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  "observability": {
+    "enabled": true
+  },
+
+  // ─── Active bindings ────────────────────────────────────────────────────────
+
+  // D1 — primary tenant database.
+  // `wrangler d1 create plates-db --location=weur` → paste id here.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "plates-db",
+      "database_id": "REPLACE_WITH_D1_ID",
+      "migrations_dir": "../../packages/db/migrations"
+    }
+  ],
+
+  // KV — subdomain → tenant lookup cache (60s TTL).
+  // `wrangler kv namespace create TENANT_CACHE` → paste id here.
+  "kv_namespaces": [
+    {
+      "binding": "TENANT_CACHE",
+      "id": "REPLACE_WITH_KV_ID"
+    }
+  ],
+
+  // R2 — original media uploads, menu PDFs, large files.
+  // `wrangler r2 bucket create plates-media`
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "plates-media"
+    }
+  ],
+
+  "vars": {
+    "APP_DOMAIN": "counter.app",
+    "ENVIRONMENT": "development"
+  }
+
+  // ─── Planned bindings (uncomment as features land) ──────────────────────────
+  //
+  // Cloudflare Images — auto-optimized restaurant photos (variants, WebP/AVIF).
+  // Account-level binding; configure variants in Cloudflare dashboard.
+  // "images": { "binding": "IMAGES" }
+  //
+  // Workers AI — fast on-platform inference (translations, embeddings, alt-text).
+  // "ai": { "binding": "AI" }
+  //
+  // Vectorize — semantic menu search ("vegansk pasta" → relevant items).
+  // `wrangler vectorize create plates-menu-embeddings --dimensions=768 --metric=cosine`
+  // "vectorize": [{ "binding": "MENU_INDEX", "index_name": "plates-menu-embeddings" }]
+  //
+  // Queues — async jobs: AI generation, email sends, order webhooks.
+  // `wrangler queues create plates-jobs`
+  // "queues": {
+  //   "producers": [{ "binding": "JOBS", "queue": "plates-jobs" }],
+  //   "consumers": [{ "queue": "plates-jobs", "max_batch_size": 10, "max_batch_timeout": 30 }]
+  // }
+  //
+  // Durable Objects — real-time order status (kitchen ↔ customer live updates).
+  // "durable_objects": {
+  //   "bindings": [{ "name": "ORDER_ROOM", "class_name": "OrderRoom" }]
+  // }
+  //
+  // Secrets (set via `wrangler secret put`):
+  //   ANTHROPIC_API_KEY        — Claude API for SEO + menu copy generation
+  //   STRIPE_SECRET_KEY        — EU payments
+  //   MOBILEPAY_API_KEY        — DK payments
+  //   RESEND_API_KEY           — transactional email
+  //   BETTER_AUTH_SECRET       — auth signing key
+}

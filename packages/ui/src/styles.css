@@ -1,0 +1,8 @@
+/* Shared design tokens. Imported by apps via `@plates/ui/styles`. */
+
+@theme {
+  --color-brand-50: oklch(0.98 0.02 145);
+  --color-brand-500: oklch(0.62 0.18 145);
+  --color-brand-700: oklch(0.45 0.16 145);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
