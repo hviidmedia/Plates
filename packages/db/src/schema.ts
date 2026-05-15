@@ -261,6 +261,57 @@ export const menuItemModifierGroups = sqliteTable(
   }),
 );
 
+// ─── Carts (pre-checkout state) ──────────────────────────────────────────────
+
+export const carts = sqliteTable(
+  "carts",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    locationId: text("location_id").references(() => locations.id, {
+      onDelete: "set null",
+    }),
+    customerEmail: text("customer_email"), // for cart recovery emails
+    fulfillmentType: text("fulfillment_type", {
+      enum: ["pickup", "delivery"],
+    })
+      .notNull()
+      .default("pickup"),
+    scheduledFor: integer("scheduled_for", { mode: "timestamp_ms" }),
+    deliveryAddress: text("delivery_address"),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    ...timestamps,
+  },
+  (t) => ({
+    tenantIdx: index("carts_tenant_idx").on(t.tenantId),
+    expiresIdx: index("carts_expires_idx").on(t.expiresAt),
+  }),
+);
+
+export const cartItems = sqliteTable(
+  "cart_items",
+  {
+    id: text("id").primaryKey(),
+    cartId: text("cart_id")
+      .notNull()
+      .references(() => carts.id, { onDelete: "cascade" }),
+    menuItemId: text("menu_item_id")
+      .notNull()
+      .references(() => menuItems.id, { onDelete: "cascade" }),
+    quantity: integer("quantity").notNull().default(1),
+    modifiersJson: text("modifiers_json"),
+    nameSnapshot: text("name_snapshot").notNull(),
+    unitPriceCents: integer("unit_price_cents").notNull(),
+    notes: text("notes"),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => ({
+    cartIdx: index("cart_items_cart_idx").on(t.cartId),
+  }),
+);
+
 // ─── Orders ──────────────────────────────────────────────────────────────────
 
 export const orders = sqliteTable(
@@ -492,3 +543,5 @@ export type MenuItem = typeof menuItems.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type Review = typeof reviews.$inferSelect;
+export type Cart = typeof carts.$inferSelect;
+export type CartItem = typeof cartItems.$inferSelect;

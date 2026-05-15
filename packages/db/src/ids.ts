@@ -23,4 +23,6 @@ export const ids = {
   tag: () => newId("tag"),
   review: () => newId("rev"),
   openingHours: () => newId("oh"),
+  cart: () => newId("cart"),
+  cartItem: () => newId("citm"),
 };
