@@ -4,6 +4,9 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { eq } from "drizzle-orm";
 import {
   improveMenuItemDescription,
+  mockImproveDescription,
+  mockOnboardingChatTurn,
+  mockSuggestDishes,
   onboardingChatTurn,
   suggestDishes,
   type ChatMessage,
@@ -34,15 +37,9 @@ const RESERVED_SUBDOMAINS = new Set([
   "auth",
 ]);
 
-function requireApiKey(): string {
+function getApiKey(): string | null {
   const { env } = getCloudflareContext();
-  const key = env.ANTHROPIC_API_KEY;
-  if (!key) {
-    throw new Error(
-      "ANTHROPIC_API_KEY is not set. Run `wrangler secret put ANTHROPIC_API_KEY`.",
-    );
-  }
-  return key;
+  return env.ANTHROPIC_API_KEY ?? null;
 }
 
 export type SubdomainCheckResult =
@@ -101,12 +98,11 @@ export async function aiSuggestDishesAction(
   ctx: WizardContextInput,
   count: number = 8,
 ): Promise<DishSuggestion[]> {
-  const apiKey = requireApiKey();
-  const { output } = await suggestDishes(
-    { apiKey },
-    toRestaurantContext(ctx),
-    count,
-  );
+  const apiKey = getApiKey();
+  const restaurantCtx = toRestaurantContext(ctx);
+  const { output } = apiKey
+    ? await suggestDishes({ apiKey }, restaurantCtx, count)
+    : await mockSuggestDishes(restaurantCtx, count);
   return output.dishes;
 }
 
@@ -114,12 +110,11 @@ export async function aiImproveDescriptionAction(
   ctx: WizardContextInput,
   item: { name: string; rawDescription?: string },
 ): Promise<string> {
-  const apiKey = requireApiKey();
-  const { output } = await improveMenuItemDescription(
-    { apiKey },
-    toRestaurantContext(ctx),
-    item,
-  );
+  const apiKey = getApiKey();
+  const restaurantCtx = toRestaurantContext(ctx);
+  const { output } = apiKey
+    ? await improveMenuItemDescription({ apiKey }, restaurantCtx, item)
+    : await mockImproveDescription(restaurantCtx, item);
   return output.description;
 }
 
@@ -127,17 +122,16 @@ export async function aiChatTurnAction(
   ctx: Partial<WizardContextInput>,
   history: ChatMessage[],
 ): Promise<ChatTurnOutput> {
-  const apiKey = requireApiKey();
-  const { output } = await onboardingChatTurn(
-    { apiKey },
-    {
-      tenantName: ctx.restaurantName,
-      city: ctx.city,
-      cuisineType: ctx.cuisineType,
-      locale: ctx.locale ?? "da",
-    },
-    history,
-  );
+  const apiKey = getApiKey();
+  const chatCtx = {
+    tenantName: ctx.restaurantName,
+    city: ctx.city,
+    cuisineType: ctx.cuisineType,
+    locale: ctx.locale ?? "da",
+  };
+  const { output } = apiKey
+    ? await onboardingChatTurn({ apiKey }, chatCtx, history)
+    : await mockOnboardingChatTurn(chatCtx, history);
   return output;
 }
 

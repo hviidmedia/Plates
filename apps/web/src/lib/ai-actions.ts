@@ -6,6 +6,8 @@ import { and, eq } from "drizzle-orm";
 import {
   generateMenuItemSeo,
   generatePlacePage,
+  mockGenerateMenuItemSeo,
+  mockGeneratePlacePage,
   type RestaurantContext,
 } from "@plates/ai";
 import {
@@ -22,19 +24,14 @@ import { getTenant } from "./tenant";
  * Server actions wrapping packages/ai. These run in the Workers runtime,
  * accept tenant-scoped inputs, and persist results to D1.
  *
- * NOT yet wired to a UI — admin will trigger these in the auth+admin PR.
- * Until then, call from a dev-only route or via wrangler.
+ * If ANTHROPIC_API_KEY is set in the env, the real generators run.
+ * If not, the mock generators (canned Danish content + small fake delay)
+ * run instead so the UI can be tested without paid API access.
  */
 
-function requireApiKey(): string {
+function getApiKey(): string | null {
   const { env } = getCloudflareContext();
-  const key = env.ANTHROPIC_API_KEY;
-  if (!key) {
-    throw new Error(
-      "ANTHROPIC_API_KEY is not set. Run `wrangler secret put ANTHROPIC_API_KEY`.",
-    );
-  }
-  return key;
+  return env.ANTHROPIC_API_KEY ?? null;
 }
 
 async function loadRestaurantContext(tenantId: string): Promise<RestaurantContext> {
@@ -66,7 +63,7 @@ export async function generateMenuItemSeoAction(
   menuItemId: string,
 ): Promise<{ seoTitle: string; seoDescription: string; aiDescription: string }> {
   const tenant = await getTenant();
-  const apiKey = requireApiKey();
+  const apiKey = getApiKey();
   const { env } = getCloudflareContext();
   const db = getDb(env.DB);
 
@@ -81,16 +78,16 @@ export async function generateMenuItemSeoAction(
 
   const ctx = await loadRestaurantContext(tenant.id);
 
-  const { output } = await generateMenuItemSeo(
-    { apiKey },
-    ctx,
-    {
-      name: item.name,
-      rawDescription: item.description,
-      priceCents: item.priceCents,
-      currency: item.currency,
-    },
-  );
+  const input = {
+    name: item.name,
+    rawDescription: item.description,
+    priceCents: item.priceCents,
+    currency: item.currency,
+  };
+
+  const { output } = apiKey
+    ? await generateMenuItemSeo({ apiKey }, ctx, input)
+    : await mockGenerateMenuItemSeo(ctx, input);
 
   await db
     .update(menuItems)
@@ -116,13 +113,15 @@ export async function generatePlacePageAction(
   area: { slug: string; areaName: string; distanceFromLocation?: string; areaContext?: string },
 ): Promise<{ id: string; slug: string }> {
   const tenant = await getTenant();
-  const apiKey = requireApiKey();
+  const apiKey = getApiKey();
   const { env } = getCloudflareContext();
   const db = getDb(env.DB);
 
   const ctx = await loadRestaurantContext(tenant.id);
 
-  const { output } = await generatePlacePage({ apiKey }, ctx, area);
+  const { output } = apiKey
+    ? await generatePlacePage({ apiKey }, ctx, area)
+    : await mockGeneratePlacePage(ctx, area);
 
   // Upsert by (tenant_id, slug)
   const existing = await db
