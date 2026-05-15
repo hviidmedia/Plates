@@ -68,20 +68,21 @@ function Hero() {
 
         <form
           id="demo"
-          action="/api/lead"
-          method="post"
+          action="/start"
+          method="get"
           className="mx-auto mt-10 flex max-w-xl items-center gap-2 rounded-full border border-zinc-200 bg-white p-2 shadow-sm"
         >
           <input
             type="text"
-            name="restaurant"
-            placeholder="Find din restaurant..."
+            name="name"
+            placeholder="Hvad hedder din restaurant?"
+            required
             className="flex-1 bg-transparent px-4 py-2 text-base outline-none placeholder:text-zinc-400"
           />
           <button
             type="submit"
             className="flex size-10 items-center justify-center rounded-full bg-[oklch(0.45_0.16_145)] text-white transition hover:bg-[oklch(0.40_0.16_145)]"
-            aria-label="Kør gratis SEO-analyse"
+            aria-label="Start onboarding"
           >
             <svg viewBox="0 0 20 20" className="size-5 fill-current" aria-hidden>
               <path d="M3.105 2.288a.75.75 0 0 0-.826.95l1.414 4.926A.75.75 0 0 0 4.42 8.7l5.836-.5a.5.5 0 0 1 0 .998l-5.836.5a.75.75 0 0 0-.726.537L2.28 15.16a.75.75 0 0 0 .95.95l13.5-5.625a.75.75 0 0 0 0-1.385L3.105 2.288Z" />
@@ -89,7 +90,7 @@ function Hero() {
           </button>
         </form>
         <p className="mt-3 text-xs text-zinc-500">
-          Gratis SEO-analyse på 30 sekunder. Ingen kreditkort.
+          Byg din side på minutter. Ingen kreditkort, ingen binding.
         </p>
       </div>
 

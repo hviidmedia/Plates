@@ -86,10 +86,27 @@ Future packages (when needed, not now):
 
 The same Next.js app serves two distinct surfaces, decided by middleware:
 
-- **Marketing** (`counter.app`, `www.counter.app`) — Owner.com-style acquisition site for restaurants. Lives in `apps/web/src/components/marketing/`. Hero with audit-CTA (the lead magnet — wired to live AI in the AI PR), features, pricing, FAQ.
-- **Tenant** (`{subdomain}.counter.app`) — the restaurant's customer-facing site. somosoaxaca.com-style menu + ordering. Currently a hello-world placeholder; full menu/order UI lands in the next UI PR.
+- **Marketing** (`counter.app`, `www.counter.app`) — Owner.com-style acquisition site for restaurants. Lives in `apps/web/src/components/marketing/`. Hero CTA leads to `/start` onboarding wizard.
+- **Tenant** (`{subdomain}.counter.app`) — the restaurant's customer-facing site. somosoaxaca.com-style menu + ordering. Tenant home, `/menu`, `/menu/[slug]`, `/cart`, `/places/[slug]`, `/sitemap.xml`.
 
 Branch decision happens in `apps/web/src/app/page.tsx` based on whether middleware injected tenant headers.
+
+### Onboarding (`/start` on apex)
+
+Public onboarding wizard at `apps/web/src/app/start/`. Two interaction modes share one `WizardState`:
+
+- **Wizard** (default) — 3-step form (info → menu → lancer). AI-assist buttons inline:
+  - "✨ Foreslå retter med AI" — Haiku 4.5 generates 8 cuisine-appropriate dishes
+  - "✨ Forbedre" per menu item — Haiku 4.5 polishes the description
+- **Chat** (toggle) — single-thread conversation. Haiku 4.5 with structured-output JSON schema extracts data into the same `WizardState` and sets `nextStep: "review"` when ready, then hands off to wizard's review step.
+
+State is **client-side only** until submit. No tenant is created during the wizard. On submit:
+
+- `submitSignupIntentAction` validates + persists to `signup_intents` (email, subdomain, full wizard JSON)
+- Subdomain is reserved (uniqueness checked across both `tenants` and `signup_intents`)
+- The auth+admin PR claims pending intents into real tenants via email-link verification
+
+Server actions: `apps/web/src/lib/onboarding-actions.ts`. All require `ANTHROPIC_API_KEY` secret.
 
 ## 5. Multi-Tenancy
 

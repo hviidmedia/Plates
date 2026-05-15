@@ -534,6 +534,32 @@ export const reviews = sqliteTable(
   }),
 );
 
+// ─── Signup intents (anonymous onboarding before auth lands) ─────────────────
+
+export const signupIntents = sqliteTable(
+  "signup_intents",
+  {
+    id: text("id").primaryKey(),
+    email: text("email").notNull(),
+    subdomain: text("subdomain").notNull(),
+    restaurantName: text("restaurant_name").notNull(),
+    /** JSON-encoded snapshot of the wizard state — see WizardState type. */
+    wizardJson: text("wizard_json").notNull(),
+    status: text("status", {
+      enum: ["pending", "claimed", "abandoned"],
+    })
+      .notNull()
+      .default("pending"),
+    createdAt: timestamps.createdAt,
+    claimedAt: integer("claimed_at", { mode: "timestamp_ms" }),
+  },
+  (t) => ({
+    subdomainIdx: uniqueIndex("signup_intents_subdomain_idx").on(t.subdomain),
+    emailIdx: index("signup_intents_email_idx").on(t.email),
+    statusIdx: index("signup_intents_status_idx").on(t.status),
+  }),
+);
+
 // ─── Type exports ────────────────────────────────────────────────────────────
 
 export type Tenant = typeof tenants.$inferSelect;
@@ -545,3 +571,4 @@ export type Customer = typeof customers.$inferSelect;
 export type Review = typeof reviews.$inferSelect;
 export type Cart = typeof carts.$inferSelect;
 export type CartItem = typeof cartItems.$inferSelect;
+export type SignupIntent = typeof signupIntents.$inferSelect;
