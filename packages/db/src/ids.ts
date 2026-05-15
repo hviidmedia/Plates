@@ -25,4 +25,5 @@ export const ids = {
   openingHours: () => newId("oh"),
   cart: () => newId("cart"),
   cartItem: () => newId("citm"),
+  signupIntent: () => newId("sint"),
 };
